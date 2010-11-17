@@ -509,7 +509,10 @@ AC_CACHE_CHECK(whether $CC accepts -g, ac_cv_prog_cc_g,
   [ac_save_c_werror_flag=$ac_c_werror_flag
    ac_c_werror_flag=yes
    ac_cv_prog_cc_g=no
-   CFLAGS="-g"
+   dnl On OS/2 $ac_objext might depend on CFLAGS, so "gcc -c -g" might fail because
+   dnl the object file can not be found, but "gcc -c -g $CFLAGS" will succeed.
+   dnl CFLAGS="-g"
+   CFLAGS="$CFLAGS -g"
    _AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
      [ac_cv_prog_cc_g=yes],
      [CFLAGS=""

@@ -192,7 +192,9 @@ sub END
   if (!$debug && defined $tmp && -d $tmp)
     {
       local $SIG{__WARN__} = sub { $status = 1; warn $_[0] };
-      File::Path::rmtree $tmp;
+      # YD here dir is not removed, resource busy
+      File::Path::rmtree $tmp, {error => \my $err};
+      $status=0;
     }
 
   # This is required if the code might send any output to stdout
