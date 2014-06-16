@@ -799,9 +799,6 @@ AN_PROGRAM([ln], [AC_PROG_LN_S])
 AC_DEFUN([AC_PROG_LN_S],
 [AC_MSG_CHECKING([whether ln -s works])
 AC_SUBST([LN_S], [$as_ln_s])dnl
-case $host_os in
-  os2*) test "$LN_S" = "ln -s" && LN_S="cp -f" ;;
-esac
 if test "$LN_S" = "ln -s"; then
   AC_MSG_RESULT([yes])
 else
