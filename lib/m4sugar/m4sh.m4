@@ -1315,16 +1315,11 @@ fi
 m4_defun([_AS_PATH_SEPARATOR_PREPARE],
 [# The user is always right.
 if test "${PATH_SEPARATOR+set}" != set; then
-  case $host_os in
-    os2*) PATH_SEPARATOR=';' ;;
-    *)
   PATH_SEPARATOR=:
-  (PATH='/bin;/bin'; FPATH=$PATH; sh -c :) >/dev/null 2>&1 && {
-    (PATH='/bin:/bin'; FPATH=$PATH; sh -c :) >/dev/null 2>&1 ||
+  (PATH='/bin;/bin;/@unixroot/usr/bin'; FPATH=$PATH; sh -c :) >/dev/null 2>&1 && {
+    (PATH='/bin:/bin:/@unixroot/usr/bin'; FPATH=$PATH; sh -c :) >/dev/null 2>&1 ||
       PATH_SEPARATOR=';'
   }
-    ;;
-  esac
 fi
 ])# _AS_PATH_SEPARATOR_PREPARE
 
