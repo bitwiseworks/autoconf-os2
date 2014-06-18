@@ -1901,6 +1901,7 @@ do
       || AC_MSG_FAILURE([failed to load site script $ac_site_file])
   fi
 done
+
 # Backslashes into forward slashes:
 # The following OS/2 specific code is performed AFTER config.site
 # has been loaded to allow users to change their environment there.
@@ -1923,9 +1924,8 @@ if test "$ac_emxsupport" != "no" -a "$ac_emxsupport" != "NO"; then
 fi
 
 # set ac_executable_extensions!
-if ls.exe --version >/dev/null 2>/dev/null; then
-  if test "$ac_executable_extensions" = ""; then
-    AC_MSG_WARN([ac_executable_extensions not set, assuming .exe])
+if test "$ac_executable_extensions" = ""; then
+  if (sh -c : && sh.exe -c :) >/dev/null 2>/dev/null; then
     ac_executable_extensions=".exe"
     export ac_executable_extensions
   fi
