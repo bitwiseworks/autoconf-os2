@@ -1921,6 +1921,29 @@ if test "$ac_emxsupport" != "no" -a "$ac_emxsupport" != "NO"; then
   done
   export PATH="$ac_TEMP_PATH"
   unset ac_TEMP_PATH
+
+  # Also, make sure that unix-like entries in PATH contain /@unixroot instead of
+  # hardcoded absolute paths to avoid these hardcoded paths in generated files.
+  if test -n "$UNIXROOT"; then
+    ac_save_IFS="$IFS"
+    ac_TEMP_UNIXROOT=`echo "$UNIXROOT" | | tr [:upper:] [:lower:]`
+    IFS="$PATH_SEPARATOR"
+    ac_TEMP_PATH=
+    for ac_dir in `echo "$PATH" | tr [:upper:] [:lower:]`; do
+      IFS=$ac_save_IFS
+      case "$ac_dir" in
+        $ac_TEMP_UNIXROOT/usr/*) ac_dir="/@unixroot${ac_dir#$ac_TEMP_UNIXROOT}" ;;
+      esac
+      if test -z "$ac_TEMP_PATH"; then
+        ac_TEMP_PATH="$ac_dir"
+      else
+        ac_TEMP_PATH="$ac_TEMP_PATH$PATH_SEPARATOR$ac_dir"
+      fi
+    done
+    unset ac_TEMP_UNIXROOT
+    export PATH="$ac_TEMP_PATH"
+    unset ac_TEMP_PATH
+  fi
 fi
 
 # set ac_executable_extensions!
