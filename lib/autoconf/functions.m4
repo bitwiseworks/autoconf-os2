@@ -1309,6 +1309,7 @@ main ()
   if (munmap (data2, pagesize))
     return 8;
 
+#ifndef __OS2__
   /* Next, try to mmap the file at a fixed address which already has
      something else allocated at it.  If we can, also make sure that
      we see the same garbage.  */
@@ -1335,6 +1336,7 @@ main ()
   for (i = 0; i < pagesize; ++i)
     if (*(data + i) != *(data3 + i))
       return 14;
+#endif
   close (fd);
   return 0;
 }]])],
