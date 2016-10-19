@@ -41,6 +41,7 @@ use Autom4te::FileUtils;
 use Autom4te::General;
 use Autom4te::XFile;
 use File::Basename;
+use File::Temp;
 use strict;
 
 # Data directory.
@@ -64,6 +65,7 @@ my $icache;
 my $tcache;
 my $ocache;
 my $icache_file;
+my $response_fh;
 
 my $flock_implemented = '@PERL_FLOCK@';
 
@@ -231,21 +233,61 @@ sub files_to_options (@)
 {
   my (@file) = @_;
   my @res;
+
+  if ($^O eq 'os2')
+    {
+      # On OS/2, there is a 32K limit on the program arguments size but
+      # the options may grow more. Use a response file.
+
+      $response_fh = new File::Temp(UNLINK => 1);
+    }
+
   foreach my $file (@file)
     {
       my $arg = shell_quote ($file);
       if ($file =~ /\.m4f$/)
 	{
-	  $arg = "--reload-state=$arg";
+        if ($^O eq 'os2')
+          {
+	    $arg = "--reload-state=$arg" ."\n";
+          }
+        else
+          {
+	    $arg = "--reload-state=$arg";
+          }
 	  # If the user downgraded M4 from 1.6 to 1.4.x after freezing
 	  # the file, then we ensure the frozen __m4_version__ will
 	  # not cause m4_init to make the wrong decision about the
 	  # current M4 version.
-	  $arg .= " --undefine=__m4_version__"
-	    unless grep {/__m4_version__/} @m4_builtin;
+        if ($^O eq 'os2')
+          {
+            $arg .= "--undefine=__m4_version__"
+              unless grep {/__m4_version__/} @m4_builtin;
+          }
+        else
+          {
+            $arg .= " --undefine=__m4_version__"
+              unless grep {/__m4_version__/} @m4_builtin;
+          }
 	}
-      push @res, $arg;
+        if ($^O eq 'os2')
+          {
+            # remove leading and trailing '
+            $arg =~ s/'//g;
+            print $response_fh $arg . "\n";
+          }
+         else
+          {
+            push @res, $arg;
+          }
     }
+
+  if ($^O eq 'os2')
+    {
+      $response_fh->flush;
+      push @res, "\@$response_fh";
+    }
+
   return join ' ', @res;
 }
 
