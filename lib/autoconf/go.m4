@@ -35,7 +35,7 @@
 AC_LANG_DEFINE([Go], [go], [GO], [GOC], [],
 [ac_ext=go
 ac_compile='$GOC -c $GOFLAGS conftest.$ac_ext >&AS_MESSAGE_LOG_FD'
-ac_link='$GOC -o conftest$ac_exeext $GOFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&AS_MESSAGE_LOG_FD'
+ac_link='eval $GOC -o conftest$ac_exeext $GOFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&AS_MESSAGE_LOG_FD'
 ac_compiler_gnu=yes
 ])
 

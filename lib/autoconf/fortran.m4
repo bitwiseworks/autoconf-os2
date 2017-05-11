@@ -142,7 +142,7 @@ fi[]dnl
 AC_LANG_DEFINE([Fortran 77], [f77], [F], [F77], [],
 [ac_ext=f
 ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&AS_MESSAGE_LOG_FD'
-ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&AS_MESSAGE_LOG_FD'
+ac_link='eval $F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&AS_MESSAGE_LOG_FD'
 ac_compiler_gnu=$ac_cv_f77_compiler_gnu
 ])
 
@@ -222,7 +222,7 @@ m4_define([AC_LANG_FUNC_LINK_TRY(Fortran 77)],
 AC_LANG_DEFINE([Fortran], [fc], [FC], [FC], [Fortran 77],
 [ac_ext=${ac_fc_srcext-f}
 ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&AS_MESSAGE_LOG_FD'
-ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&AS_MESSAGE_LOG_FD'
+ac_link='eval $FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&AS_MESSAGE_LOG_FD'
 ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 ])
 
