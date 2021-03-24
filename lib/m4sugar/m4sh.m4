@@ -1052,6 +1052,7 @@ as_echo=$as_echo$as_echo$as_echo$as_echo$as_echo$as_echo
 # Prefer a ksh shell builtin over an external printf program on Solaris,
 # but without wasting forks for bash or zsh.
 if test -z "$BASH_VERSION$ZSH_VERSION" \
+    && (test "X`uname`" != "XOS/2") \
     && (test "X`print -r -- $as_echo`" = "X$as_echo") 2>/dev/null; then
   as_echo='print -r --'
   as_echo_n='print -rn --'
