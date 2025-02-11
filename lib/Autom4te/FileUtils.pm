@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2012 Free Software Foundation, Inc.
+# Copyright (C) 2003-2023 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -11,7 +11,7 @@
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ###############################################################
 # The main copy of this file is in Automake's git repository. #
@@ -36,48 +36,48 @@ This perl module provides various general purpose file handling functions.
 
 use 5.006;
 use strict;
-use Exporter;
-use File::stat;
+use warnings FATAL => 'all';
+
+BEGIN
+{
+  require Exporter;
+  our @ISA = qw (Exporter);
+  our @EXPORT = qw (&contents
+		    &find_file &mtime
+		    &update_file
+		    &xsystem &xsystem_hint &xqx
+		    &dir_has_case_matching_file &reset_dir_cache
+		    &set_dir_cache_file);
+}
+
+# Use sub-second resolution file timestamps if available, carry on
+# with one-second resolution timestamps if Time::HiRes is not available.
+#
+# Unfortunately, even if Time::HiRes is available, we don't get
+# timestamps to the full precision recorded by the operating system,
+# because Time::HiRes converts timestamps to floating-point, and the
+# rounding error is hundreds of nanoseconds for circa-2023 timestamps
+# in IEEE double precision.  But this is the best we can do without
+# dropping down to C.
+#
+# $subsecond_mtime is not exported, but is intended for external
+# consumption, as $Autom4te::FileUtils::subsecond_mtime.
+BEGIN
+{
+  our $subsecond_mtime = 0;
+  eval
+    {
+      require Time::HiRes;
+      import Time::HiRes qw(stat);
+      $subsecond_mtime = 1;
+    }
+}
+
 use IO::File;
 use Autom4te::Channels;
 use Autom4te::ChannelDefs;
 
-use vars qw (@ISA @EXPORT);
-
-@ISA = qw (Exporter);
-@EXPORT = qw (&open_quote &contents
-	      &find_file &mtime
-	      &update_file &up_to_date_p
-	      &xsystem &xsystem_hint &xqx
-	      &dir_has_case_matching_file &reset_dir_cache
-	      &set_dir_cache_file);
-
-
-=item C<open_quote ($file_name)>
-
-Quote C<$file_name> for open.
-
-=cut
-
-# $FILE_NAME
-# open_quote ($FILE_NAME)
-# -----------------------
-# If the string $S is a well-behaved file name, simply return it.
-# If it starts with white space, prepend './', if it ends with
-# white space, add '\0'.  Return the new string.
-sub open_quote($)
-{
-  my ($s) = @_;
-  if ($s =~ m/^\s/)
-    {
-      $s = "./$s";
-    }
-  if ($s =~ m/\s$/)
-    {
-      $s = "$s\0";
-    }
-  return $s;
-}
+=over 4
 
 =item C<find_file ($file_name, @include)>
 
@@ -139,10 +139,11 @@ sub mtime ($)
   return 0
     if $file eq '-' || ! -f $file;
 
-  my $stat = stat ($file)
+  my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+    $atime,$mtime,$ctime,$blksize,$blocks) = stat ($file)
     or fatal "cannot stat $file: $!";
 
-  return $stat->mtime;
+  return $mtime;
 }
 
 
@@ -168,7 +169,7 @@ sub update_file ($$;$)
 
   if ($to eq '-')
     {
-      my $in = new IO::File ("< " . open_quote ($from));
+      my $in = new IO::File $from, "<";
       my $out = new IO::File (">-");
       while ($_ = $in->getline)
 	{
@@ -203,34 +204,6 @@ sub update_file ($$;$)
 	or fatal "cannot rename $from as $to: $!";
       msg 'note', "'$to' is created";
     }
-}
-
-
-=item C<up_to_date_p ($file, @dep)>
-
-Is C<$file> more recent than C<@dep>?
-
-=cut
-
-# $BOOLEAN
-# &up_to_date_p ($FILE, @DEP)
-# ---------------------------
-sub up_to_date_p ($@)
-{
-  my ($file, @dep) = @_;
-  my $mtime = mtime ($file);
-
-  foreach my $dep (@dep)
-    {
-      if ($mtime < mtime ($dep))
-	{
-	  verb "up_to_date ($file): outdated: $dep";
-	  return 0;
-	}
-    }
-
-  verb "up_to_date ($file): up to date";
-  return 1;
 }
 
 
@@ -360,7 +333,7 @@ sub contents ($)
   my ($file) = @_;
   verb "reading $file";
   local $/;			# Turn on slurp-mode.
-  my $f = new Autom4te::XFile "< " . open_quote ($file);
+  my $f = new Autom4te::XFile $file, "<";
   my $contents = $f->getline;
   $f->close;
   return $contents;
@@ -383,7 +356,7 @@ same file).
 
 =cut
 
-use vars '%_directory_cache';
+our %_directory_cache;
 sub dir_has_case_matching_file ($$)
 {
   # Note that print File::Spec->case_tolerant returns 0 even on MacOS
@@ -431,6 +404,10 @@ sub set_dir_cache_file ($$)
   $_directory_cache{$dirname}{$file_name} = 1
     if exists $_directory_cache{$dirname};
 }
+
+=back
+
+=cut
 
 1; # for require
 
