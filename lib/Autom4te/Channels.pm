@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2012 Free Software Foundation, Inc.
+# Copyright (C) 2002-2023 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -11,7 +11,7 @@
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ###############################################################
 # The main copy of this file is in Automake's git repository. #
@@ -68,24 +68,25 @@ etc.) that can also be overridden on a per-message basis.
 
 use 5.006;
 use strict;
-use Exporter;
+use warnings FATAL => 'all';
+
 use Carp;
+use Exporter;
 use File::Basename;
 
-use vars qw (@ISA @EXPORT %channels $me);
+our @ISA = qw (Exporter);
+our @EXPORT = qw ($exit_code $warnings_are_errors
+		  &reset_local_duplicates &reset_global_duplicates
+		  &register_channel &msg &exists_channel &channel_type
+		  &setup_channel &setup_channel_type
+		  &dup_channel_setup &drop_channel_setup
+		  &buffer_messages &flush_messages
+		  &setup_channel_queue &pop_channel_queue
+		  US_GLOBAL US_LOCAL
+		  UP_NONE UP_TEXT UP_LOC_TEXT);
 
-@ISA = qw (Exporter);
-@EXPORT = qw ($exit_code $warnings_are_errors
-	      &reset_local_duplicates &reset_global_duplicates
-	      &register_channel &msg &exists_channel &channel_type
-	      &setup_channel &setup_channel_type
-	      &dup_channel_setup &drop_channel_setup
-	      &buffer_messages &flush_messages
-	      &setup_channel_queue &pop_channel_queue
-	      US_GLOBAL US_LOCAL
-	      UP_NONE UP_TEXT UP_LOC_TEXT);
-
-$me = basename $0;
+our %channels;
+our $me = basename $0;
 
 =head2 Global Variables
 
@@ -98,8 +99,7 @@ the C<exit_code> options of C<fatal> and C<error> channels.
 
 =cut
 
-use vars qw ($exit_code);
-$exit_code = 0;
+our $exit_code = 0;
 
 =item C<$warnings_are_errors>
 
@@ -108,8 +108,7 @@ errors (i.e. if they should update C<$exit_code>).
 
 =cut
 
-use vars qw ($warnings_are_errors);
-$warnings_are_errors = 0;
+our $warnings_are_errors = 0;
 
 =back
 
@@ -259,11 +258,8 @@ be ignored.
 
 =cut
 
-use vars qw (%_default_options %_global_duplicate_messages
-	     %_local_duplicate_messages);
-
 # Default options for a channel.
-%_default_options =
+our %_default_options =
   (
    type => 'warning',
    exit_code => 1,
@@ -283,8 +279,8 @@ use vars qw (%_default_options %_global_duplicate_messages
 # Filled with output messages as keys, to detect duplicates.
 # The value associated with each key is the number of occurrences
 # filtered out.
-%_local_duplicate_messages = ();
-%_global_duplicate_messages = ();
+our %_local_duplicate_messages = ();
+our %_global_duplicate_messages = ();
 
 sub _reset_duplicates (\%)
 {
@@ -403,8 +399,7 @@ sub _format_sub_message ($$)
 }
 
 # Store partial messages here. (See the 'partial' option.)
-use vars qw ($partial);
-$partial = '';
+our $partial = '';
 
 # _format_message ($LOCATION, $MESSAGE, %OPTIONS)
 # -----------------------------------------------
@@ -619,11 +614,9 @@ both print
 =cut
 
 
-use vars qw (@backlog %buffering);
-
 # See buffer_messages() and flush_messages() below.
-%buffering = ();	# The map of channel types to buffer.
-@backlog = ();		# The buffer of messages.
+our %buffering = ();	# The map of channel types to buffer.
+our @backlog = ();		# The buffer of messages.
 
 sub msg ($$;$%)
 {
@@ -635,7 +628,13 @@ sub msg ($$;$%)
       $location = '';
     }
 
-  confess "unknown channel $channel" unless exists $channels{$channel};
+  if (!exists $channels{$channel})
+    {
+      # This can happen as a result of e.g. m4_warn([nonsense], [message])
+      # so it should not crash.
+      report_bad_channel($channel, $location);
+      $channel = 'syntax';
+    }
 
   my %opts = %{$channels{$channel}};
   _merge_options (%opts, %options);
@@ -667,6 +666,45 @@ sub msg ($$;$%)
 	  exit $exit_code;
 	}
     }
+}
+
+sub report_bad_channel ($$)
+{
+  my ($channel, $location) = @_;
+  my $message;
+  my $report_as = 'error';
+
+  # quotemeta is both too aggressive (e.g. it escapes '-') and
+  # too generous (it turns control characters into \ + themselves,
+  # not into symbolic escapes).
+  my $q_channel = $channel;
+  $q_channel =~ s/(?=[\"\$\'\@\`\\])/\\/g;
+  $q_channel =~ s/([^\x20-\x7e])/sprintf('\\x%02X', ord $1)/eg;
+  $q_channel = '"' . $q_channel . '"';
+
+  if ($channel eq '' || $channel eq 'all')
+    {
+      # Prior to version 2.70, the Autoconf manual said it was valid to use
+      # "all" and the empty string as the category argument to m4_warn, so
+      # don't treat those cases as errors.
+      $report_as = 'obsolete';
+      $message = "use of $q_channel as a diagnostic category is obsolete\n";
+      $message .= "(see autom4te --help for a list of valid categories)";
+    }
+  elsif ($channel eq 'none'
+         || ($channel =~ /^no-/ && exists $channels{substr($channel, 3)}))
+    {
+      # Also recognize "none" and "no-[category]", as someone might have
+      # thought anything acceptable to -W is also acceptable to m4_warn.
+      # Note: m4_warn([error], [...]) does actually issue an error.
+      $message = "-W accepts $q_channel, but it is not a diagnostic category";
+    }
+  else
+    {
+      $message = "unknown diagnostic category " . $q_channel;
+    }
+
+  msg $report_as, $location, $message;
 }
 
 
@@ -715,9 +753,8 @@ entry, while C<drop_channel_setup ()> just deletes it.
 
 =cut
 
-use vars qw (@_saved_channels @_saved_werrors);
-@_saved_channels = ();
-@_saved_werrors = ();
+our @_saved_channels = ();
+our @_saved_werrors = ();
 
 sub dup_channel_setup ()
 {
@@ -817,20 +854,3 @@ Written by Alexandre Duret-Lutz E<lt>F<adl@gnu.org>E<gt>.
 =cut
 
 1;
-
-### Setup "GNU" style for perl-mode and cperl-mode.
-## Local Variables:
-## perl-indent-level: 2
-## perl-continued-statement-offset: 2
-## perl-continued-brace-offset: 0
-## perl-brace-offset: 0
-## perl-brace-imaginary-offset: 0
-## perl-label-offset: -2
-## cperl-indent-level: 2
-## cperl-brace-offset: 0
-## cperl-continued-brace-offset: 0
-## cperl-label-offset: -2
-## cperl-extra-newline-before-brace: t
-## cperl-merge-trailing-else: nil
-## cperl-continued-statement-offset: 2
-## End:
