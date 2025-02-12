@@ -399,7 +399,7 @@ sub install_aux_file
           unlink $dest
             or fatal "rm -f $dest: $!";
         }
-      my ($temp, $tempname) = tempfile (UNLINK => 0, DIR => $destdir);
+      my ($temp, $tempname) = tempfile (UNLINK => 0, DIR => $destdir, OPEN => 0);
       copy ($src, $tempname)
         or fatal "copying $src to $tempname: $!";
       make_executable ($tempname) if -x $src;
