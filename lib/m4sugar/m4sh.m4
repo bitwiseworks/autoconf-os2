@@ -265,7 +265,7 @@ shell if you do have one.], [$[]0: ], [], [62])")
   fi
   AS_EXIT])])
 fi
-SHELL=${CONFIG_SHELL-/bin/sh}
+SHELL=${CONFIG_SHELL-${UNIXROOT:+/@unixroot/usr}/bin/sh}
 export SHELL
 # Unset more variables known to interfere with behavior of common tools.
 CLICOLOR_FORCE= GREP_OPTIONS=
