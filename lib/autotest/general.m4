@@ -232,7 +232,7 @@ m4_copyright_condense])]
 unlimited permission to copy, distribute and modify it.], [m4_echo])]
 [AS_PREPARE
 
-SHELL=${CONFIG_SHELL-/bin/sh}
+SHELL=${CONFIG_SHELL-${UNIXROOT:+/@unixroot/usr}/bin/sh}
 
 # How were we run?
 at_cli_args="$[@]"
